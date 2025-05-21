@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"go-todo/internal/models"
 	"log"
 	"testing"
 	"time"
@@ -10,6 +11,62 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
+
+func TestTodoCRUD(t *testing.T) {
+    srv := New()
+
+    // Create
+    todo := &models.Todo{
+        Title:       "Test Todo",
+        Description: "Test Description",
+        Completed:   false,
+    }
+    if err := srv.CreateTodo(todo); err != nil {
+        t.Fatalf("CreateTodo failed: %v", err)
+    }
+
+    // List
+    todos, err := srv.GetTodos()
+    if err != nil {
+        t.Fatalf("GetTodos failed: %v", err)
+    }
+    if len(todos) == 0 {
+        t.Fatalf("expected at least one todo, got 0")
+    }
+
+    // Get (by ID)
+    created := todos[len(todos)-1]
+    got, err := srv.GetTodo(created.ID)
+    if err != nil {
+        t.Fatalf("GetTodo failed: %v", err)
+    }
+    if got.Title != todo.Title {
+        t.Errorf("expected title %q, got %q", todo.Title, got.Title)
+    }
+
+    // Update
+    created.Title = "Updated Title"
+    created.Completed = true
+    if err := srv.UpdateTodo(&created); err != nil {
+        t.Fatalf("UpdateTodo failed: %v", err)
+    }
+    updated, err := srv.GetTodo(created.ID)
+    if err != nil {
+        t.Fatalf("GetTodo after update failed: %v", err)
+    }
+    if updated.Title != "Updated Title" || !updated.Completed {
+        t.Errorf("update did not persist changes")
+    }
+
+    // Delete
+    if err := srv.DeleteTodo(created.ID); err != nil {
+        t.Fatalf("DeleteTodo failed: %v", err)
+    }
+    _, err = srv.GetTodo(created.ID)
+    if err == nil {
+        t.Fatalf("expected error after deleting todo, got nil")
+    }
+}
 
 func mustStartPostgresContainer() (func(context.Context, ...testcontainers.TerminateOption) error, error) {
 	var (

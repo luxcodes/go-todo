@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"go-todo/internal/models"
 	"log"
 	"os"
 	"strconv"
@@ -18,6 +19,13 @@ type Service interface {
 	// Health returns a map of health status information.
 	// The keys and values in the map are service-specific.
 	Health() map[string]string
+
+	// Todos
+	GetTodos() ([]models.Todo, error)
+	GetTodo(id int) (models.Todo, error)
+	CreateTodo(todo *models.Todo) error
+	UpdateTodo(todo *models.Todo) error
+	DeleteTodo(id int) error
 
 	// Close terminates the database connection.
 	// It returns an error if the connection cannot be closed.

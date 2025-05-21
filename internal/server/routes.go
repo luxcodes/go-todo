@@ -10,9 +10,15 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux := http.NewServeMux()
 
 	// Register routes
-	mux.HandleFunc("/", s.HelloWorldHandler)
-
+	mux.HandleFunc("/ping", s.PingHandler)
 	mux.HandleFunc("/health", s.healthHandler)
+
+	// Todo routes
+	mux.HandleFunc("/todos", s.getTodosHandler)
+	mux.HandleFunc("/todo", s.getTodoHandler)
+	mux.HandleFunc("/todo/create", s.createTodoHandler)
+	mux.HandleFunc("/todo/update", s.updateTodoHandler)
+	mux.HandleFunc("/todo/delete", s.deleteTodoHandler)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)
@@ -37,17 +43,17 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]string{"message": "Hello World"}
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if _, err := w.Write(jsonResp); err != nil {
-		log.Printf("Failed to write response: %v", err)
-	}
+func (s *Server) PingHandler(w http.ResponseWriter, r *http.Request) {
+    resp := map[string]string{"message": "pong"}
+    jsonResp, err := json.Marshal(resp)
+    if err != nil {
+        http.Error(w, "Failed to marshal response", http.StatusInternalServerError)
+        return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    if _, err := w.Write(jsonResp); err != nil {
+        log.Printf("Failed to write response: %v", err)
+    }
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
