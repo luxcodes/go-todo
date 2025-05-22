@@ -10,6 +10,12 @@ import (
 	"strings"
 )
 
+// @Summary Get all todos
+// @Description Get all todos
+// @Tags todos
+// @Produce json
+// @Success 200 {array} models.Todo
+// @Router /todos [get]
 func (s *Server) getTodosHandler(w http.ResponseWriter, r *http.Request) {
 	todos, err := s.db.GetTodos()
 	if err != nil {
@@ -23,6 +29,13 @@ func (s *Server) getTodosHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Get a todo by ID
+// @Description Get a todo by ID
+// @Tags todos
+// @Produce json
+// @Param id path int true "Todo ID"
+// @Success 200 {object} models.Todo
+// @Router /todo/{id} [get]
 func (s *Server) getTodoHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDFromPath(r)
 	if err != nil {
@@ -48,6 +61,14 @@ type newTodo struct {
 	Completed   *bool  `json:"completed"`
 }
 
+// @Summary Create todo
+// @Description Create a new todo
+// @Tags todos
+// @Accept json
+// @Produce json
+// @Param todo body newTodo true "Todo"
+// @Success 201 {object} models.Todo
+// @Router /todo/create [post]
 func (s *Server) createTodoHandler(w http.ResponseWriter, r *http.Request) {
 	var newTodo newTodo
 	if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
@@ -84,6 +105,15 @@ type updateTodo struct {
 	Completed   *bool  `json:"completed"`
 }
 
+// @Summary Update todo
+// @Description Update an existing todo
+// @Tags todos
+// @Accept json
+// @Produce json
+// @Param id path int true "Todo ID"
+// @Param todo body updateTodo true "Todo"
+// @Success 200 {object} models.Todo
+// @Router /todo/update/{id} [put]
 func (s *Server) updateTodoHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDFromPath(r)
 	if err != nil {
@@ -124,6 +154,12 @@ func (s *Server) updateTodoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Delete todo
+// @Description Delete a todo by ID
+// @Tags todos
+// @Param id path int true "Todo ID"
+// @Success 204
+// @Router /todo/delete/{id} [delete]
 func (s *Server) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDFromPath(r)
 	if err != nil {

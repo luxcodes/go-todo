@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	httpSwagger "github.com/swaggo/http-swagger"
+	_ "go-todo/docs"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -12,6 +15,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Register routes
 	mux.HandleFunc("/ping", s.PingHandler)
 	mux.HandleFunc("/health", s.healthHandler)
+	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
 
 	// Todo routes
 	mux.HandleFunc("/todos", s.getTodosHandler)
@@ -43,6 +47,12 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// @Summary: PingHandler godoc
+// @Description: Ping the server
+// @Tags: ping
+// @Produce: json
+// @Success: 200 {object} map[string]string
+// @Router: /ping [get]
 func (s *Server) PingHandler(w http.ResponseWriter, r *http.Request) {
     resp := map[string]string{"message": "pong"}
     jsonResp, err := json.Marshal(resp)
@@ -56,6 +66,12 @@ func (s *Server) PingHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+// @Summary: HealthHandler godoc
+// @Description: Check the health of the server
+// @Tags: health
+// @Produce: json
+// @Success: 200 {object} map[string]string
+// @Router: /health [get]
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := json.Marshal(s.db.Health())
 	if err != nil {
