@@ -5,14 +5,27 @@ all: build test
 
 build:
 	@echo "Building..."
-	
-	
+	@go mod tidy
 	@go build -o main cmd/api/main.go
+
+# Run migrations
+MIGRATIONS_DIR=./migrations
+DB_URL=postgres://${DB_USERNAME}:${DB_PASSWORD}@$(DB_HOST):$(DB_PORT)/${DB_DATABASE}?sslmode=disable
+
+migrate-up:
+	@echo "Running migrations..."
+	@migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
+	@echo "Migrations completed."
+
+migrate-down:
+	@echo "Rolling back migrations..."
+	@migrate -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down
+	@echo "Rollback completed."
 
 # Run the application
 run:
 	@go run cmd/api/main.go
-	
+
 # Create DB container
 docker-run:
 	@if docker compose up --build 2>/dev/null; then \

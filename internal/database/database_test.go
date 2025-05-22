@@ -2,14 +2,21 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"go-todo/internal/models"
 	"log"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/golang-migrate/migrate/v4"
+	migratepg "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func TestTodoCRUD(t *testing.T) {
@@ -68,59 +75,95 @@ func TestTodoCRUD(t *testing.T) {
     }
 }
 
-func mustStartPostgresContainer() (func(context.Context, ...testcontainers.TerminateOption) error, error) {
-	var (
-		dbName = "database"
-		dbPwd  = "password"
-		dbUser = "user"
-	)
+func runMigrations(connStr string) error {
+    db, err := sql.Open("pgx", connStr)
+    if err != nil {
+        return err
+    }
+    defer db.Close()
 
-	dbContainer, err := postgres.Run(
-		context.Background(),
-		"postgres:latest",
-		postgres.WithDatabase(dbName),
-		postgres.WithUsername(dbUser),
-		postgres.WithPassword(dbPwd),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second)),
-	)
+    driver, err := migratepg.WithInstance(db, &migratepg.Config{})
+    if err != nil {
+        return err
+    }
+	
+	m, err := migrate.NewWithDatabaseInstance(
+    	"file://../../migrations",
+    	"postgres", driver)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	database = dbName
-	password = dbPwd
-	username = dbUser
-
-	dbHost, err := dbContainer.Host(context.Background())
-	if err != nil {
-		return dbContainer.Terminate, err
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
 	}
 
-	dbPort, err := dbContainer.MappedPort(context.Background(), "5432/tcp")
-	if err != nil {
-		return dbContainer.Terminate, err
-	}
+	return nil
+}
 
-	host = dbHost
-	port = dbPort.Port()
 
-	return dbContainer.Terminate, err
+func startPgContainer() (teardown func(context.Context, ...testcontainers.TerminateOption) error, err error) {
+    database := "testdb"
+    username := "testuser"
+    password := "testpass"
+    schema := "public"
+
+    dbContainer, err := postgres.Run(
+        context.Background(),
+        "postgres:latest",
+        postgres.WithDatabase(database),
+        postgres.WithUsername(username),
+        postgres.WithPassword(password),
+        testcontainers.WithWaitStrategy(
+            wait.ForLog("database system is ready to accept connections").
+                WithOccurrence(2).
+                WithStartupTimeout(10*time.Second)),
+    )
+    if err != nil {
+        return nil, err
+    }
+
+    host, err := dbContainer.Host(context.Background())
+    if err != nil {
+        return nil, err
+    }
+    port, err := dbContainer.MappedPort(context.Background(), "5432")
+    if err != nil {
+        return nil, err
+    }
+
+    // Set environment variables for use in New()
+    os.Setenv("DB_HOST", host)
+    os.Setenv("DB_PORT", port.Port())
+    os.Setenv("DB_DATABASE", database)
+    os.Setenv("DB_USERNAME", username)
+    os.Setenv("DB_PASSWORD", password)
+    os.Setenv("DB_SCHEMA", schema)
+
+    // Build connection string for migrations
+    connStr := fmt.Sprintf(
+        "postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s",
+        username, password, host, port.Port(), database, schema,
+    )
+    if err := runMigrations(connStr); err != nil {
+        return nil, fmt.Errorf("could not run migrations: %w", err)
+    }
+
+    return dbContainer.Terminate, nil
 }
 
 func TestMain(m *testing.M) {
-	teardown, err := mustStartPostgresContainer()
-	if err != nil {
-		log.Fatalf("could not start postgres container: %v", err)
-	}
+    teardown, err := startPgContainer()
+    if err != nil {
+        log.Fatalf("could not start postgres container: %v", err)
+    }
 
-	m.Run()
+    code := m.Run()
 
-	if teardown != nil && teardown(context.Background()) != nil {
-		log.Fatalf("could not teardown postgres container: %v", err)
-	}
+    if teardown != nil && teardown(context.Background()) != nil {
+        log.Fatalf("could not teardown postgres container")
+    }
+    os.Exit(code)
 }
 
 func TestNew(t *testing.T) {

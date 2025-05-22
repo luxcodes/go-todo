@@ -10,6 +10,23 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - postgres_volume:/var/lib/postgresql/data
+  
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      - postgres
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: [
+      "migrate",
+      "-path", "/migrations",
+      "-database", "postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:5432/${DB_DATABASE}?sslmode=disable",
+      "up"
+    ]
+    environment:
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
 
 volumes:
   postgres_volume:

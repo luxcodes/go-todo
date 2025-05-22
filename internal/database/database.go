@@ -36,21 +36,21 @@ type service struct {
 	db *sql.DB
 }
 
-var (
-	database   = os.Getenv("DB_DATABASE")
-	password   = os.Getenv("DB_PASSWORD")
-	username   = os.Getenv("DB_USERNAME")
-	port       = os.Getenv("DB_PORT")
-	host       = os.Getenv("DB_HOST")
-	schema     = os.Getenv("DB_SCHEMA")
-	dbInstance *service
-)
+var dbInstance *service
 
 func New() Service {
 	// Reuse Connection
 	if dbInstance != nil {
 		return dbInstance
 	}
+
+	database := os.Getenv("DB_DATABASE")
+    password := os.Getenv("DB_PASSWORD")
+    username := os.Getenv("DB_USERNAME")
+    port := os.Getenv("DB_PORT")
+    host := os.Getenv("DB_HOST")
+    schema := os.Getenv("DB_SCHEMA")
+
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s", username, password, host, port, database, schema)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
@@ -118,6 +118,6 @@ func (s *service) Health() map[string]string {
 // If the connection is successfully closed, it returns nil.
 // If an error occurs while closing the connection, it returns the error.
 func (s *service) Close() error {
-	log.Printf("Disconnected from database: %s", database)
+	log.Print("Disconnected from database...")
 	return s.db.Close()
 }
