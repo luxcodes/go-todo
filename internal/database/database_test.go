@@ -53,6 +53,7 @@ func TestTodoCRUD(t *testing.T) {
 
     // Update
     created.Title = "Updated Title"
+	created.Description = "Updated Description"
     created.Completed = true
     if err := srv.UpdateTodo(&created); err != nil {
         t.Fatalf("UpdateTodo failed: %v", err)
@@ -61,7 +62,7 @@ func TestTodoCRUD(t *testing.T) {
     if err != nil {
         t.Fatalf("GetTodo after update failed: %v", err)
     }
-    if updated.Title != "Updated Title" || !updated.Completed {
+    if updated.Title != "Updated Title" || updated.Description != "Updated Description" || !updated.Completed  {
         t.Errorf("update did not persist changes")
     }
 

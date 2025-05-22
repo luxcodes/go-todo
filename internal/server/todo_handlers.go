@@ -2,9 +2,12 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
+	"go-todo/internal/models"
 	"log"
 	"net/http"
-	"go-todo/internal/models"
+	"strconv"
+	"strings"
 )
 
 func (s *Server) getTodosHandler(w http.ResponseWriter, r *http.Request) {
@@ -21,13 +24,13 @@ func (s *Server) getTodosHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getTodoHandler(w http.ResponseWriter, r *http.Request) {
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	id, err := parseIDFromPath(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	todo, err := s.db.GetTodo(todo.ID)
+	todo, err := s.db.GetTodo(id)
 	if err != nil {
 		http.Error(w, "Failed to fetch todo", http.StatusInternalServerError)
 		return
@@ -39,11 +42,28 @@ func (s *Server) getTodoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type newTodo struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Completed   *bool  `json:"completed"`
+}
+
 func (s *Server) createTodoHandler(w http.ResponseWriter, r *http.Request) {
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
+	var newTodo newTodo
+	if err := json.NewDecoder(r.Body).Decode(&newTodo); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
+	}
+
+	if newTodo.Title == "" || newTodo.Description == "" || newTodo.Completed == nil {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	todo := models.Todo{
+		Title:       newTodo.Title,
+		Description: newTodo.Description,
+		Completed:   *newTodo.Completed,
 	}
 
 	if err := s.db.CreateTodo(&todo); err != nil {
@@ -58,12 +78,40 @@ func (s *Server) createTodoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type updateTodo struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Completed   *bool  `json:"completed"`
+}
+
 func (s *Server) updateTodoHandler(w http.ResponseWriter, r *http.Request) {
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
+	id, err := parseIDFromPath(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check if the todo exists
+	todo, err := s.db.GetTodo(id)
+	if err != nil {
+		http.Error(w, "Todo not found", http.StatusNotFound)
+		return
+	}
+
+	var updateTodo updateTodo
+	if err := json.NewDecoder(r.Body).Decode(&updateTodo); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+
+	if updateTodo.Title == "" || updateTodo.Description == "" || updateTodo.Completed == nil {
+        http.Error(w, "Missing required fields", http.StatusBadRequest)
+        return
+    }
+
+	todo.Title = updateTodo.Title
+	todo.Description = updateTodo.Description
+	todo.Completed = *updateTodo.Completed
 
 	if err := s.db.UpdateTodo(&todo); err != nil {
 		http.Error(w, "Failed to update todo", http.StatusInternalServerError)
@@ -89,4 +137,16 @@ func (s *Server) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func parseIDFromPath(r *http.Request) (int, error) {
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 3 {
+		return 0, fmt.Errorf("missing todo ID")
+	}
+	id, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return 0, fmt.Errorf("invalid todo ID")
+	}
+	return id, nil
 }
