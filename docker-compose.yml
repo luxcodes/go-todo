@@ -1,4 +1,20 @@
 services:
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PORT=${PORT}
+      - DB_HOST=postgres
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_SCHEMA=${DB_SCHEMA}
+    expose:
+      - "${PORT}"
+
   postgres:
     image: postgres:latest
     restart: unless-stopped
@@ -33,6 +49,17 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docs:/app/docs:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_volume:

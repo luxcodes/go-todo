@@ -32,5 +32,7 @@ main
 # OS X generated file
 .DS_Store
 
-# swagger docs
-docs/
+# swagger generated files
+docs/docs.go
+docs/swagger.json
+docs/swagger.yaml
