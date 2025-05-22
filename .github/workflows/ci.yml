@@ -45,6 +45,11 @@ jobs:
     - name: Install dependencies
       run: go mod download
 
+    - name: Generate Swagger docs
+      run: |
+        go install github.com/swaggo/swag/cmd/swag@latest
+        swag init -g cmd/api/main.go
+
     - name: Lint
       run: |
         go fmt ./...
@@ -58,8 +63,3 @@ jobs:
 
     - name: Build
       run: go build -o main ./cmd/api/main.go
-
-    - name: Generate Swagger docs
-      run: |
-        go install github.com/swaggo/swag/cmd/swag@latest
-        swag init -g cmd/api/main.go
