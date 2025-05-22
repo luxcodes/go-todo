@@ -153,6 +153,28 @@ func TestUpdateTodoHandler(t *testing.T) {
 	}
 }
 
+func TestDeleteTodoHandler(t *testing.T) {
+	s := &Server{db: newMockDBService()}
+	created := createTestTodo(s, models.Todo{Title: "Test", Description: "Test Desc", Completed: false})
+
+	req := httptest.NewRequest(http.MethodDelete, "/todos/1", nil)
+	w := httptest.NewRecorder()
+
+	s.deleteTodoHandler(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected status 204, got %d", resp.StatusCode)
+	}
+
+	_, err := s.db.GetTodo(created.ID)
+	if err == nil {
+		t.Fatalf("expected error after deleting todo, got nil")
+	}
+}
+
 func createTestTodo(s *Server, todo models.Todo) models.Todo {
 	body, _ := json.Marshal(todo)
 	req := httptest.NewRequest(http.MethodPost, "/todos", strings.NewReader(string(body)))
