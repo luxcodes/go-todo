@@ -125,9 +125,15 @@ func (s *Server) updateTodoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	id, err := parseIDFromPath(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
+	todo, err := s.db.GetTodo(id)
+	if err != nil {
+		http.Error(w, "Todo not found", http.StatusNotFound)
 		return
 	}
 
@@ -140,13 +146,14 @@ func (s *Server) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func parseIDFromPath(r *http.Request) (int, error) {
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) < 3 {
-		return 0, fmt.Errorf("missing todo ID")
-	}
-	id, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return 0, fmt.Errorf("invalid todo ID")
-	}
-	return id, nil
+	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+    if len(parts) == 0 {
+        return 0, fmt.Errorf("missing todo ID")
+    }
+    idStr := parts[len(parts)-1]
+    id, err := strconv.Atoi(idStr)
+    if err != nil {
+        return 0, fmt.Errorf("invalid todo ID")
+    }
+    return id, nil
 }

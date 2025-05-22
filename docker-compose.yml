@@ -8,13 +8,19 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_PORT}:5432"
+    healthcheck:
+      test: pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}
+      interval: 10s
+      timeout: 3s
+      retries: 5
     volumes:
       - postgres_volume:/var/lib/postgresql/data
   
   migrate:
     image: migrate/migrate
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
       - ./migrations:/migrations
     entrypoint: [

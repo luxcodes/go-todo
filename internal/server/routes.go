@@ -15,10 +15,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	// Todo routes
 	mux.HandleFunc("/todos", s.getTodosHandler)
-	mux.HandleFunc("/todo", s.getTodoHandler)
+	mux.HandleFunc("/todo/", s.getTodoHandler)
 	mux.HandleFunc("/todo/create", s.createTodoHandler)
-	mux.HandleFunc("/todo/update", s.updateTodoHandler)
-	mux.HandleFunc("/todo/delete", s.deleteTodoHandler)
+	mux.HandleFunc("/todo/update/", s.updateTodoHandler)
+	mux.HandleFunc("/todo/delete/", s.deleteTodoHandler)
 
 	// Wrap the mux with CORS middleware
 	return s.corsMiddleware(mux)

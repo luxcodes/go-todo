@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"go-todo/internal/models"
 )
 
@@ -35,17 +36,23 @@ func (s *dbService) GetTodo(id int) (models.Todo, error) {
 }
 
 func (s *dbService) CreateTodo(todo *models.Todo) error {
-	_, err := s.db.Exec("INSERT INTO todos (title, description, completed) VALUES ($1, $2, $3)", todo.Title, todo.Description, todo.Completed)
-	if err != nil {
-		return err
-	}
-	return nil
+    return s.db.QueryRow(
+        "INSERT INTO todos (title, description, completed) VALUES ($1, $2, $3) RETURNING id",
+        todo.Title, todo.Description, todo.Completed,
+    ).Scan(&todo.ID)
 }
 
 func (s *dbService) UpdateTodo(todo *models.Todo) error {
-	_, err := s.db.Exec("UPDATE todos SET title = $1, description = $2, completed = $3 WHERE id = $4", todo.Title, todo.Description, todo.Completed, todo.ID)
+	res, err := s.db.Exec("UPDATE todos SET title = $1, description = $2, completed = $3 WHERE id = $4", todo.Title, todo.Description, todo.Completed, todo.ID)
 	if err != nil {
 		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
 	}
 	return nil
 }
