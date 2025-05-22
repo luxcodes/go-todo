@@ -77,14 +77,17 @@ func TestTodoCRUD(t *testing.T) {
 }
 
 func runMigrations(connStr string) error {
+	log.Printf("Running migrations with connection string: %s", connStr)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
+		log.Printf("runMigrations: failed to open DB: %v", err)
 		return err
 	}
 	defer db.Close()
 
 	driver, err := migratepg.WithInstance(db, &migratepg.Config{})
 	if err != nil {
+		log.Printf("runMigrations: failed to create migrate driver: %v", err)
 		return err
 	}
 
@@ -92,13 +95,16 @@ func runMigrations(connStr string) error {
 		"file://../../migrations",
 		"postgres", driver)
 	if err != nil {
+		log.Printf("runMigrations: failed to create migrate instance: %v", err)
 		return err
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Printf("runMigrations: migration failed: %v", err)
 		return err
 	}
 
+	log.Printf("runMigrations: migrations applied successfully")
 	return nil
 }
 
@@ -146,7 +152,7 @@ func startPgContainer() (teardown func(context.Context, ...testcontainers.Termin
 		username, password, host, port.Port(), database, schema,
 	)
 	if err := runMigrations(connStr); err != nil {
-		return nil, fmt.Errorf("could not run migrations: %w", err)
+		return nil, err
 	}
 
 	return dbContainer.Terminate, nil
