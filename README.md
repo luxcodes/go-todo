@@ -1,6 +1,6 @@
 # go-todo
 
-A simple Go-based TODO REST API with Postgres, Swagger documentation, and integration tests.
+A maybe not so simple Go-based TODO REST API
 
 ---
 
@@ -10,8 +10,10 @@ A simple Go-based TODO REST API with Postgres, Swagger documentation, and integr
 - PostgreSQL database with migrations
 - RESTful API with JSON
 - Auto-generated Swagger (OpenAPI) docs
+- Interactive Swagger UI (served via Nginx, using CDN)
 - Integration tests using Testcontainers
 - Docker Compose support for local development
+- Nginx reverse proxy for unified API and docs access
 
 ---
 
@@ -24,40 +26,26 @@ A simple Go-based TODO REST API with Postgres, Swagger documentation, and integr
 - [Make](https://www.gnu.org/software/make/)
 - [swag](https://github.com/swaggo/swag) for Swagger docs (`go install github.com/swaggo/swag/cmd/swag@latest`)
 
-### Database Setup
+---
 
-Start Postgres w/ migrations using Docker Compose:
+## Building & Running
+
+Start all services using Docker Compose:
 
 ```sh
 make docker-up
 ```
 
----
-
-## Building & Running
-
-### Build the application
-
-```sh
-make build
-```
-
-### Run the application
-
-```sh
-make run
-```
-
-The API will be available at [http://localhost:8080](http://localhost:8080).
+- API endpoints: [http://localhost/](http://localhost/)
+- Swagger UI: [http://localhost/swagger/](http://localhost/swagger/)
 
 ---
 
 ## API Documentation
 
-Swagger UI is available at:
-[http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html)
-
-To regenerate Swagger docs after editing handler comments:
+- **Swagger UI** is served via Nginx at `/swagger/index.html`.
+- The UI loads the OpenAPI JSON from `/swagger/swagger.json`.
+- To regenerate Swagger docs after editing handler comments:
 
 ```sh
 swag init -g cmd/api/main.go
@@ -104,10 +92,11 @@ make itest
 cmd/api/           # Main application entrypoint
 internal/          # Application code (server, database, models)
 migrations/        # SQL migration files
-docs/              # Swagger docs (auto-generated)
+docs/              # Swagger docs and UI (swagger.json, swagger.html, etc.)
 .env               # Environment variables
 Makefile           # Build and test commands
 docker-compose.yml # Docker Compose config
+nginx.conf         # Nginx reverse proxy config
 ```
 
 ---
