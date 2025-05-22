@@ -135,9 +135,9 @@ func (s *Server) updateTodoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if updateTodo.Title == "" || updateTodo.Description == "" || updateTodo.Completed == nil {
-        http.Error(w, "Missing required fields", http.StatusBadRequest)
-        return
-    }
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
 
 	todo.Title = updateTodo.Title
 	todo.Description = updateTodo.Description
@@ -166,7 +166,7 @@ func (s *Server) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	todo, err := s.db.GetTodo(id)
 	if err != nil {
 		http.Error(w, "Todo not found", http.StatusNotFound)
@@ -183,13 +183,13 @@ func (s *Server) deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
 
 func parseIDFromPath(r *http.Request) (int, error) {
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
-    if len(parts) == 0 {
-        return 0, fmt.Errorf("missing todo ID")
-    }
-    idStr := parts[len(parts)-1]
-    id, err := strconv.Atoi(idStr)
-    if err != nil {
-        return 0, fmt.Errorf("invalid todo ID")
-    }
-    return id, nil
+	if len(parts) == 0 {
+		return 0, fmt.Errorf("missing todo ID")
+	}
+	idStr := parts[len(parts)-1]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid todo ID")
+	}
+	return id, nil
 }

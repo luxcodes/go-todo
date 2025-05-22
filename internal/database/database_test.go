@@ -20,77 +20,77 @@ import (
 )
 
 func TestTodoCRUD(t *testing.T) {
-    srv := New()
+	srv := New()
 
-    // Create
-    todo := &models.Todo{
-        Title:       "Test Todo",
-        Description: "Test Description",
-        Completed:   false,
-    }
-    if err := srv.CreateTodo(todo); err != nil {
-        t.Fatalf("CreateTodo failed: %v", err)
-    }
+	// Create
+	todo := &models.Todo{
+		Title:       "Test Todo",
+		Description: "Test Description",
+		Completed:   false,
+	}
+	if err := srv.CreateTodo(todo); err != nil {
+		t.Fatalf("CreateTodo failed: %v", err)
+	}
 
-    // List
-    todos, err := srv.GetTodos()
-    if err != nil {
-        t.Fatalf("GetTodos failed: %v", err)
-    }
-    if len(todos) == 0 {
-        t.Fatalf("expected at least one todo, got 0")
-    }
+	// List
+	todos, err := srv.GetTodos()
+	if err != nil {
+		t.Fatalf("GetTodos failed: %v", err)
+	}
+	if len(todos) == 0 {
+		t.Fatalf("expected at least one todo, got 0")
+	}
 
-    // Get (by ID)
-    created := todos[len(todos)-1]
-    got, err := srv.GetTodo(created.ID)
-    if err != nil {
-        t.Fatalf("GetTodo failed: %v", err)
-    }
-    if got.Title != todo.Title {
-        t.Errorf("expected title %q, got %q", todo.Title, got.Title)
-    }
+	// Get (by ID)
+	created := todos[len(todos)-1]
+	got, err := srv.GetTodo(created.ID)
+	if err != nil {
+		t.Fatalf("GetTodo failed: %v", err)
+	}
+	if got.Title != todo.Title {
+		t.Errorf("expected title %q, got %q", todo.Title, got.Title)
+	}
 
-    // Update
-    created.Title = "Updated Title"
+	// Update
+	created.Title = "Updated Title"
 	created.Description = "Updated Description"
-    created.Completed = true
-    if err := srv.UpdateTodo(&created); err != nil {
-        t.Fatalf("UpdateTodo failed: %v", err)
-    }
-    updated, err := srv.GetTodo(created.ID)
-    if err != nil {
-        t.Fatalf("GetTodo after update failed: %v", err)
-    }
-    if updated.Title != "Updated Title" || updated.Description != "Updated Description" || !updated.Completed  {
-        t.Errorf("update did not persist changes")
-    }
+	created.Completed = true
+	if err := srv.UpdateTodo(&created); err != nil {
+		t.Fatalf("UpdateTodo failed: %v", err)
+	}
+	updated, err := srv.GetTodo(created.ID)
+	if err != nil {
+		t.Fatalf("GetTodo after update failed: %v", err)
+	}
+	if updated.Title != "Updated Title" || updated.Description != "Updated Description" || !updated.Completed {
+		t.Errorf("update did not persist changes")
+	}
 
-    // Delete
-    if err := srv.DeleteTodo(created.ID); err != nil {
-        t.Fatalf("DeleteTodo failed: %v", err)
-    }
-    _, err = srv.GetTodo(created.ID)
-    if err == nil {
-        t.Fatalf("expected error after deleting todo, got nil")
-    }
+	// Delete
+	if err := srv.DeleteTodo(created.ID); err != nil {
+		t.Fatalf("DeleteTodo failed: %v", err)
+	}
+	_, err = srv.GetTodo(created.ID)
+	if err == nil {
+		t.Fatalf("expected error after deleting todo, got nil")
+	}
 }
 
 func runMigrations(connStr string) error {
-    db, err := sql.Open("pgx", connStr)
-    if err != nil {
-        return err
-    }
-    defer db.Close()
+	db, err := sql.Open("pgx", connStr)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 
-    driver, err := migratepg.WithInstance(db, &migratepg.Config{})
-    if err != nil {
-        return err
-    }
-	
+	driver, err := migratepg.WithInstance(db, &migratepg.Config{})
+	if err != nil {
+		return err
+	}
+
 	m, err := migrate.NewWithDatabaseInstance(
-    	"file://../../migrations",
-    	"postgres", driver)
+		"file://../../migrations",
+		"postgres", driver)
 	if err != nil {
 		return err
 	}
@@ -102,69 +102,68 @@ func runMigrations(connStr string) error {
 	return nil
 }
 
-
 func startPgContainer() (teardown func(context.Context, ...testcontainers.TerminateOption) error, err error) {
-    database := "testdb"
-    username := "testuser"
-    password := "testpass"
-    schema := "public"
+	database := "testdb"
+	username := "testuser"
+	password := "testpass"
+	schema := "public"
 
-    dbContainer, err := postgres.Run(
-        context.Background(),
-        "postgres:latest",
-        postgres.WithDatabase(database),
-        postgres.WithUsername(username),
-        postgres.WithPassword(password),
-        testcontainers.WithWaitStrategy(
-            wait.ForLog("database system is ready to accept connections").
-                WithOccurrence(2).
-                WithStartupTimeout(10*time.Second)),
-    )
-    if err != nil {
-        return nil, err
-    }
+	dbContainer, err := postgres.Run(
+		context.Background(),
+		"postgres:latest",
+		postgres.WithDatabase(database),
+		postgres.WithUsername(username),
+		postgres.WithPassword(password),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).
+				WithStartupTimeout(10*time.Second)),
+	)
+	if err != nil {
+		return nil, err
+	}
 
-    host, err := dbContainer.Host(context.Background())
-    if err != nil {
-        return nil, err
-    }
-    port, err := dbContainer.MappedPort(context.Background(), "5432")
-    if err != nil {
-        return nil, err
-    }
+	host, err := dbContainer.Host(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	port, err := dbContainer.MappedPort(context.Background(), "5432")
+	if err != nil {
+		return nil, err
+	}
 
-    // Set environment variables for use in New()
-    os.Setenv("DB_HOST", host)
-    os.Setenv("DB_PORT", port.Port())
-    os.Setenv("DB_DATABASE", database)
-    os.Setenv("DB_USERNAME", username)
-    os.Setenv("DB_PASSWORD", password)
-    os.Setenv("DB_SCHEMA", schema)
+	// Set environment variables for use in New()
+	os.Setenv("DB_HOST", host)
+	os.Setenv("DB_PORT", port.Port())
+	os.Setenv("DB_DATABASE", database)
+	os.Setenv("DB_USERNAME", username)
+	os.Setenv("DB_PASSWORD", password)
+	os.Setenv("DB_SCHEMA", schema)
 
-    // Build connection string for migrations
-    connStr := fmt.Sprintf(
-        "postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s",
-        username, password, host, port.Port(), database, schema,
-    )
-    if err := runMigrations(connStr); err != nil {
-        return nil, fmt.Errorf("could not run migrations: %w", err)
-    }
+	// Build connection string for migrations
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s",
+		username, password, host, port.Port(), database, schema,
+	)
+	if err := runMigrations(connStr); err != nil {
+		return nil, fmt.Errorf("could not run migrations: %w", err)
+	}
 
-    return dbContainer.Terminate, nil
+	return dbContainer.Terminate, nil
 }
 
 func TestMain(m *testing.M) {
-    teardown, err := startPgContainer()
-    if err != nil {
-        log.Fatalf("could not start postgres container: %v", err)
-    }
+	teardown, err := startPgContainer()
+	if err != nil {
+		log.Fatalf("could not start postgres container: %v", err)
+	}
 
-    code := m.Run()
+	code := m.Run()
 
-    if teardown != nil && teardown(context.Background()) != nil {
-        log.Fatalf("could not teardown postgres container")
-    }
-    os.Exit(code)
+	if teardown != nil && teardown(context.Background()) != nil {
+		log.Fatalf("could not teardown postgres container")
+	}
+	os.Exit(code)
 }
 
 func TestNew(t *testing.T) {

@@ -36,10 +36,10 @@ func (s *dbService) GetTodo(id int) (models.Todo, error) {
 }
 
 func (s *dbService) CreateTodo(todo *models.Todo) error {
-    return s.db.QueryRow(
-        "INSERT INTO todos (title, description, completed) VALUES ($1, $2, $3) RETURNING id",
-        todo.Title, todo.Description, todo.Completed,
-    ).Scan(&todo.ID)
+	return s.db.QueryRow(
+		"INSERT INTO todos (title, description, completed) VALUES ($1, $2, $3) RETURNING id",
+		todo.Title, todo.Description, todo.Completed,
+	).Scan(&todo.ID)
 }
 
 func (s *dbService) UpdateTodo(todo *models.Todo) error {
