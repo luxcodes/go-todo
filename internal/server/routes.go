@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+
+	_ "go-todo/docs"
 
 	httpSwagger "github.com/swaggo/http-swagger"
-	_ "go-todo/docs"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -15,7 +17,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 	// Register routes
 	mux.HandleFunc("/ping", s.PingHandler)
 	mux.HandleFunc("/health", s.healthHandler)
-	mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+
+	// Only serve Swagger UI if not in production
+	if os.Getenv("APP_ENV") != "production" {
+		mux.HandleFunc("/swagger/", httpSwagger.WrapHandler)
+	}
 
 	// Todo routes
 	mux.HandleFunc("/todos", s.getTodosHandler)

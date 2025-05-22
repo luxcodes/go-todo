@@ -1,0 +1,28 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get tag name
+        id: tag
+        run: |
+          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Deploy to Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          DEPLOY_TAG: ${{ env.TAG }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_URL is not set"
+            exit 1
+          fi
+          echo "Triggering Render deploy for tag $DEPLOY_TAG"
+          curl -X POST -d "tag=$DEPLOY_TAG" "$RENDER_DEPLOY_HOOK_URL"
