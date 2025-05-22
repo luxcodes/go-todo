@@ -50,6 +50,10 @@ jobs:
         go install github.com/swaggo/swag/cmd/swag@latest
         swag init -g cmd/api/main.go
 
+    - name: Check for up-to-date Swagger docs
+      run: |
+        git diff --exit-code docs/ || (echo "Swagger docs are out of date. Run 'swag init -g cmd/api/main.go' and commit the changes." && exit 1)
+
     - name: Lint
       run: |
         go fmt ./...

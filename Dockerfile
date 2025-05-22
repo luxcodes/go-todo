@@ -19,8 +19,8 @@ WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /app/main .
-# Copy .env and docs for Swagger UI if needed
-COPY .env .
+
+# Copy docs for Swagger UI if needed
 COPY docs ./docs
 
 EXPOSE 8080
