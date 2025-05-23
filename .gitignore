@@ -34,5 +34,4 @@ main
 
 # swagger generated files
 docs/docs.go
-docs/swagger.json
 docs/swagger.yaml

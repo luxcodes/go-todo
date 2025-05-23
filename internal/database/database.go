@@ -50,8 +50,12 @@ func New() DBService {
 	port := os.Getenv("DB_PORT")
 	host := os.Getenv("DB_HOST")
 	schema := os.Getenv("DB_SCHEMA")
+	sslmode := os.Getenv("DB_SSLMODE")
 
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable&search_path=%s", username, password, host, port, database, schema)
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s&search_path=%s",
+		username, password, host, port, database, sslmode, schema,
+	)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
 		log.Fatal(err)
